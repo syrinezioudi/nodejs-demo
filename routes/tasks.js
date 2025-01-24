@@ -53,4 +53,28 @@ router.delete('/:id', (req, res) => {
   res.status(204).send();
 });
 
+// Search tasks by title keyword
+router.get('/search/:keyword', (req, res) => {
+  const tasks = JSON.parse(fs.readFileSync(dataPath, 'utf-8'));
+  const keyword = req.params.keyword.toLowerCase();
+  const filteredTasks = tasks.filter((task) =>
+    task.title.toLowerCase().includes(keyword)
+  );
+
+  if (filteredTasks.length === 0) {
+    return res.status(404).json({ error: 'No tasks found matching the keyword' });
+  }
+
+  res.json(filteredTasks);
+});
+
+// Mark all tasks as completed
+router.patch('/complete-all', (req, res) => {
+  const tasks = JSON.parse(fs.readFileSync(dataPath, 'utf-8'));
+  const updatedTasks = tasks.map((task) => ({ ...task, completed: true }));
+
+  fs.writeFileSync(dataPath, JSON.stringify(updatedTasks, null, 2));
+  res.json({ message: 'All tasks marked as completed', tasks: updatedTasks });
+});
+
 module.exports = router;
