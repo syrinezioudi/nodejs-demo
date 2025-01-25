@@ -70,11 +70,15 @@ router.get('/search/:keyword', (req, res) => {
 
 // Mark all tasks as completed
 router.patch('/complete-all', (req, res) => {
-  const tasks = JSON.parse(fs.readFileSync(dataPath, 'utf-8'));
-  const updatedTasks = tasks.map((task) => ({ ...task, completed: true }));
-
-  fs.writeFileSync(dataPath, JSON.stringify(updatedTasks, null, 2));
-  res.json({ message: 'All tasks marked as completed', tasks: updatedTasks });
+  try {
+    const tasks = JSON.parse(fs.readFileSync(dataPath, 'utf-8'));
+    const updatedTasks = tasks.map((task) => ({ ...task, completed: true }));
+    fs.writeFileSync(dataPath, JSON.stringify(updatedTasks, null, 2));
+    res.json({ message: 'All tasks marked as completed', tasks: updatedTasks });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update tasks' });
+  }
+});
 });
 
 module.exports = router;
