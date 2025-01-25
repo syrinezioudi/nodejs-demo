@@ -1,20 +1,38 @@
+name: LangSmith Integration
+
 on:
-    pull_request:
-      types: [opened, reopened, ready_for_review]
-    issue_comment:
-  jobs:
-    pr_agent_job:
-      if: ${{ github.event.sender.type != 'Bot' }}
-      runs-on: ubuntu-latest
-      permissions:
-        issues: write
-        pull-requests: write
-        contents: write
-      name: Run pr agent on every pull request, respond to user comments
-      steps:
-        - name: PR Agent action step
-          id: pragent
-          uses: qodo-ai/pr-agent@v0.26
-          env:
-            OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  pull_request:
+    types: [opened, reopened, ready_for_review]
+  issue_comment:
+    types: [created]
+
+jobs:
+  pr_agent_job:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4320
+    permissions:
+      issues: write
+      pull-requests: write
+      contents: write
+
+    steps:
+      - name: Install dependencies
+        run: |
+          npm install langsmith openai
+
+      - name: Run PR Agent
+        env:
+          LANGSMITH_API_KEY: "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"  # LangSmith API key
+          OPENAI_API_KEY: "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"  # Make sure to store your OpenAI API key as a secret
+        run: |
+          # Add script for interacting with LangSmith or related tasks
+          # For example, log basic PR info to LangSmith or analyze files
+          npx langsmith analyze --model "gpt-o1" --pr-url "${{ github.event.pull_request.html_url }}" --api-key "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"
+
+
+      - name: Apply Compression Settings
+        run: |
+          echo "Applying compression settings and tools..."
+          echo "pr_compression: enabled=true" >> .github/pr_agent.yml
+          echo "improve_tool: extended_mode=true" >> .github/pr_agent.yml
+          echo "allow_only_specific_folders: [\"routes"]" >> .github/pr_agent.yml
