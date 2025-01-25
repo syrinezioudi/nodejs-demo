@@ -35,4 +35,4 @@ jobs:
           echo "Applying compression settings and tools..."
           echo "pr_compression: enabled=true" >> .github/workflows/pr_agent.yml
           echo "improve_tool: extended_mode=true" >> .github/workflows/pr_agent.yml
-          echo "allow_only_specific_folders: [\"routes"]" >> .github/workflows/pr_agent.yml
+         # echo "allow_only_specific_folders: [\"routes"]" >> .github/workflows/pr_agent.yml
