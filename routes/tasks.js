@@ -56,7 +56,7 @@ router.delete('/:id', (req, res) => {
 // Search tasks by title keyword
 router.get('/search/:keyword', (req, res) => {
   const tasks = JSON.parse(fs.readFileSync(dataPath, 'utf-8'));
-  const keyword = req.params.keyword.toLowerCase();
+  const keyword = req.params.keyword.replace(/[^a-zA-Z0-9\s-]/g, '').toLowerCase();
   const filteredTasks = tasks.filter((task) =>
     task.title.toLowerCase().includes(keyword)
   );
