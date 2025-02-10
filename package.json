@@ -8,7 +8,7 @@
   },
   "dependencies": {
     "body-parser": "^1.20.3",
-    "express": "^4.21.2",
+    "express": "^4.17.1",
     "lodash": "^4.17.21",
     "openai": "^4.80.1"
   },
