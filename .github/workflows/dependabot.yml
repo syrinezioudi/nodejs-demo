@@ -1,10 +1,10 @@
 name: Dependabot fetch metadata
 on:
-  pull_request:
-    types:
-      - opened
-      - synchronize
-      - reopened  # This will trigger when a PR is updated
+    pull_request:
+      types:
+        - opened
+        - synchronize
+        - reopened
 
 permissions:
   pull-requests: write
@@ -14,14 +14,14 @@ permissions:
 jobs:
   dependabot:
     runs-on: ubuntu-latest
-    if: github.event.pull_request.user.login == 'dependabot[bot]' || github.event.pull_request.user.login == 'syrinezioudi'
+    if: github.event.pull_request.user.login == 'dependabot' && github.repository == 'syrinezioudi/nodejs-demo'
     steps:
-      - name: Debug PR Info
-        run: |
-          echo "PR User: ${{ github.event.pull_request.user.login }}"
-          echo "PR Repository: ${{ github.repository }}"
       - name: Dependabot metadata
         id: metadata
         uses: dependabot/fetch-metadata@d7267f607e9d3fb96fc2fbe83e0af444713e90b7
         with:
           github-token: "${{ secrets.GITHUB_TOKEN }}"
+      # The following properties are now available:
+      #  - steps.metadata.outputs.dependency-names
+      #  - steps.metadata.outputs.dependency-type
+      #  - steps.metadata.outputs.update-type
