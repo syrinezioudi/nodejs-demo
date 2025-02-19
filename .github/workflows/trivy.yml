@@ -3,13 +3,13 @@ name: Build and Scan with Trivy
 on:
   push:
     branches:
-      - 'main'
+      - 'master'
       - 'develop'
       - 'qa'
       - 'test'
   pull_request:
     branches:
-      - 'main'
+      - 'master'
       - 'develop'
       - 'qa'
       - 'test'
