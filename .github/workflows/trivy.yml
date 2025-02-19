@@ -46,7 +46,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: ghcr.io/${{ github.repository }}:${{ steps.meta.outputs.tags }}
+          tags: ghcr.io/${{ github.repository }}:${{ github.ref_name }}
           labels: ${{ steps.meta.outputs.labels }}
 
   scan:
@@ -59,13 +59,13 @@ jobs:
       - name: Wait for Docker image to be pushed to GHCR (Optional)
         run: |
           echo "Waiting for Docker image to be available..."
-          sleep 10 # Optional delay for ensuring the image is available
+          sleep 10
 
       - name: Run Trivy Scan on Docker Image
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: image
-          image-ref: ghcr.io/${{ github.repository }}:${{ steps.meta.outputs.tags }}
+          image-ref: ghcr.io/${{ github.repository }}:${{ github.ref_name }}
           format: table
           exit-code: 1
           severity: CRITICAL,HIGH
