@@ -12,17 +12,14 @@ RUN npm ci --verbose
 # Copy application files
 COPY . .
 
-# Build the application (if applicable)
-RUN npm run build
-
 # Stage 2: Runner (Smaller Final Image)
 FROM node:22-alpine AS runner
 
 WORKDIR /opt/app
 
-# Copy built app and dependencies from builder
+# Copy dependencies and source code from builder
 COPY --from=builder /opt/app/node_modules ./node_modules
 COPY --from=builder /opt/app ./
 
 # Set the entry point
-CMD ["node", "./dist/index.js"]
+CMD ["node", "index.js"]
