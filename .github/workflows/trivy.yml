@@ -80,9 +80,14 @@ jobs:
 
       - name: Run Trivy Scan on Docker Image
         run: |
-          trivy image --format table --exit-code 1 --severity CRITICAL,HIGH ghcr.io/${{ github.repository }}:${{ github.ref_name }}
+          if [ ! -d ~/.cache/trivy/db ]; then
+            echo "First run: downloading Trivy DB..."
+            trivy image --format table --exit-code 1 --severity CRITICAL,HIGH ghcr.io/${{ github.repository }}:${{ github.ref_name }}
+          else
+            echo "Subsequent run: skipping DB update..."
+            trivy image --format table --exit-code 1 --severity CRITICAL,HIGH ghcr.io/${{ github.repository }}:${{ github.ref_name }} --skip-update
+          fi
         env:
-          TRIVY_SKIP_DB_UPDATE: true
           TRIVY_SKIP_JAVA_DB_UPDATE: true
 
   update-trivy-db:
