@@ -7,6 +7,13 @@ on:
       - 'develop'
       - 'qa'
       - 'test'
+    paths:
+      - 'Dockerfile'
+      - 'docker-compose.yml'
+      - 'package.json'
+      
+
+
   pull_request:
     branches:
       - 'master'
