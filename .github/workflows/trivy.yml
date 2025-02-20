@@ -21,6 +21,7 @@ on:
 
   schedule:
     - cron: '0 0 * * *'  # Runs daily at midnight UTC
+    - cron: '0 0 * * 0'  # Runs weekly at midnight UTC
 
 jobs:
   build:
@@ -113,7 +114,14 @@ jobs:
           tar -xzf javadb.tar.gz -C ~/.cache/trivy/java-db && rm javadb.tar.gz
 
       - name: Cache Trivy Databases
-        uses: actions/cache/save@v4
+        uses: actions/cache@v4
         with:
           path: ~/.cache/trivy
           key: trivy-db-${{ runner.os }}-${{ env.date }}
+          restore-keys: |
+            trivy-db-${{ runner.os }}-
+
+      - name: Run Trivy DB Update Check
+        run: |
+          echo "Checking for updates to Trivy database..."
+          trivy image --format table --exit-code 1 --severity CRITICAL,HIGH ghcr.io/${{ github.repository }}:${{ github.ref_name }} --skip-update
