@@ -1,4 +1,4 @@
-name: Build and Scan with Trivy
+name: Build, Scan & Trivy DB Check
 
 on:
   push:
@@ -11,8 +11,6 @@ on:
       - 'Dockerfile'
       - 'docker-compose.yml'
       - 'package.json'
-      
-
 
   pull_request:
     branches:
@@ -20,6 +18,11 @@ on:
       - 'develop'
       - 'qa'
       - 'test'
+
+  schedule:
+    - cron: '0 0 * * 1' # Runs every Monday at midnight UTC
+
+  workflow_dispatch: # Allows manual trigger
 
 jobs:
   build:
@@ -63,16 +66,52 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Wait for Docker image to be pushed to GHCR (Optional)
-        run: |
-          echo "Waiting for Docker image to be available..."
-          sleep 10
+      - name: Restore Trivy Cache
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/trivy
+          key: trivy-db-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: trivy-db-${{ runner.os }}-
+
+      - name: Update Trivy Database
+        run: trivy --download-db-only
 
       - name: Run Trivy Scan on Docker Image
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: image
           image-ref: ghcr.io/${{ github.repository }}:${{ github.ref_name }}
+          format: table
+          exit-code: 1
+          severity: CRITICAL,HIGH
+
+  check_trivy_db:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+    steps:
+      - name: Restore Trivy Cache
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/trivy
+          key: trivy-db-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: trivy-db-${{ runner.os }}-
+
+      - name: Check for Trivy Database Updates
+        run: |
+          trivy --download-db-only
+          if [ "$(trivy --version | grep 'DB Schema')" != "$(cat ~/.cache/trivy/db_schema_version 2>/dev/null)" ]; then
+            echo "Trivy database updated! Running a scan..."
+            echo "$(trivy --version | grep 'DB Schema')" > ~/.cache/trivy/db_schema_version
+          else
+            echo "No Trivy database update detected. Skipping scan."
+            exit 0
+          fi
+
+      - name: Run Scheduled Trivy Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: image
+          image-ref: ghcr.io/${{ github.repository }}:latest
           format: table
           exit-code: 1
           severity: CRITICAL,HIGH
