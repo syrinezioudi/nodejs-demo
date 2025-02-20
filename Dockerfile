@@ -22,6 +22,5 @@ COPY --from=builder /opt/app/node_modules ./node_modules
 COPY --from=builder /opt/app ./
 
 
-
 # Set the entry point
 CMD ["node", "index.js"]
