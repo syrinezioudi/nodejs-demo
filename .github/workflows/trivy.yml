@@ -101,6 +101,11 @@ jobs:
           version: v0.57.1
           cache: true
 
+      - name: Install oras (for Trivy DB update)
+        run: |
+          curl -sSL https://github.com/deislabs/oras/releases/download/v0.16.0/oras_0.16.0_linux_amd64.tar.gz | tar -xz -C /usr/local/bin oras
+          oras --version # Verify oras installation
+
       - name: Get current date
         id: date
         run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
