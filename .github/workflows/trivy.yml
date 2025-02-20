@@ -1,4 +1,4 @@
-name: Build, Scan & Trivy DB Check
+name: Build, Scan with Trivy & Update DB
 
 on:
   push:
@@ -20,9 +20,8 @@ on:
       - 'test'
 
   schedule:
-    - cron: '0 0 * * 1' # Runs every Monday at midnight UTC
-
-  workflow_dispatch: # Allows manual trigger
+    - cron: '0 0 * * 0'  # Runs every Sunday at midnight (weekly)
+    - cron: '0 0 * * *'  # Runs daily at midnight
 
 jobs:
   build:
@@ -66,52 +65,48 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Restore Trivy Cache
+      - name: Install Trivy
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget
+          wget https://github.com/aquasecurity/trivy/releases/latest/download/trivy_Linux-64bit.tar.gz
+          tar zxvf trivy_Linux-64bit.tar.gz
+          sudo mv trivy /usr/local/bin/
+
+      - name: Cache Trivy Database
         uses: actions/cache@v3
         with:
           path: ~/.cache/trivy
-          key: trivy-db-${{ runner.os }}-${{ github.run_id }}
-          restore-keys: trivy-db-${{ runner.os }}-
+          key: ${{ runner.os }}-trivy-db
+          restore-keys: |
+            ${{ runner.os }}-trivy-db
 
       - name: Update Trivy Database
         run: trivy --download-db-only
 
       - name: Run Trivy Scan on Docker Image
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: image
-          image-ref: ghcr.io/${{ github.repository }}:${{ github.ref_name }}
-          format: table
-          exit-code: 1
-          severity: CRITICAL,HIGH
+        run: |
+          trivy image --format table --exit-code 1 --severity CRITICAL,HIGH ghcr.io/${{ github.repository }}:${{ github.ref_name }}
 
-  check_trivy_db:
+  update-trivy-db:
     runs-on: ubuntu-latest
     if: github.event_name == 'schedule'
     steps:
-      - name: Restore Trivy Cache
+      - name: Install Trivy
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget
+          wget https://github.com/aquasecurity/trivy/releases/latest/download/trivy_Linux-64bit.tar.gz
+          tar zxvf trivy_Linux-64bit.tar.gz
+          sudo mv trivy /usr/local/bin/
+
+      - name: Cache Trivy Database
         uses: actions/cache@v3
         with:
           path: ~/.cache/trivy
-          key: trivy-db-${{ runner.os }}-${{ github.run_id }}
-          restore-keys: trivy-db-${{ runner.os }}-
+          key: ${{ runner.os }}-trivy-db
+          restore-keys: |
+            ${{ runner.os }}-trivy-db
 
-      - name: Check for Trivy Database Updates
-        run: |
-          trivy --download-db-only
-          if [ "$(trivy --version | grep 'DB Schema')" != "$(cat ~/.cache/trivy/db_schema_version 2>/dev/null)" ]; then
-            echo "Trivy database updated! Running a scan..."
-            echo "$(trivy --version | grep 'DB Schema')" > ~/.cache/trivy/db_schema_version
-          else
-            echo "No Trivy database update detected. Skipping scan."
-            exit 0
-          fi
-
-      - name: Run Scheduled Trivy Scan
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: image
-          image-ref: ghcr.io/${{ github.repository }}:latest
-          format: table
-          exit-code: 1
-          severity: CRITICAL,HIGH
+      - name: Update Trivy Database
+        run: trivy --download-db-only
