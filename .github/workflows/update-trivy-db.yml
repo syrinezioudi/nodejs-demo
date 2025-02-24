@@ -1,0 +1,43 @@
+name: Update Trivy DB
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Runs daily at midnight UTC
+    - cron: '0 0 * * 0'  # Runs weekly at midnight UTC
+
+  workflow_dispatch:  # Allows manual triggering
+
+jobs:
+  update-trivy-db:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Trivy
+        uses: aquasecurity/setup-trivy@v0.2.0
+        with:
+          version: v0.57.1
+          cache: true
+
+      - name: Install oras (for Trivy DB update)
+        run: |
+          curl -sSL https://github.com/deislabs/oras/releases/download/v0.16.0/oras_0.16.0_linux_amd64.tar.gz | tar -xz -C /usr/local/bin oras
+          oras version # Verify oras installation
+
+      - name: Get current date
+        id: date
+        run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
+
+      - name: Download Trivy Databases
+        run: |
+          mkdir -p ~/.cache/trivy/db ~/.cache/trivy/java-db
+          oras pull ghcr.io/aquasecurity/trivy-db:2
+          tar -xzf db.tar.gz -C ~/.cache/trivy/db && rm db.tar.gz
+          oras pull ghcr.io/aquasecurity/trivy-java-db:1
+          tar -xzf javadb.tar.gz -C ~/.cache/trivy/java-db && rm javadb.tar.gz
+
+      - name: Cache Trivy Databases
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/trivy
+          key: trivy-db-${{ runner.os }}-${{ env.date }}
+          restore-keys: |
+            trivy-db-${{ runner.os }}-
