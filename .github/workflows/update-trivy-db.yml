@@ -1,6 +1,7 @@
 name: Update Trivy DB
 
 on:
+    
   schedule:
     - cron: '0 0 * * *'  # Runs daily at midnight UTC
     - cron: '0 0 * * 0'  # Runs weekly at midnight UTC
@@ -26,13 +27,36 @@ jobs:
         id: date
         run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
 
-      - name: Download Trivy Databases
+      - name: Check for Trivy DB updates
         run: |
           mkdir -p ~/.cache/trivy/db ~/.cache/trivy/java-db
-          oras pull ghcr.io/aquasecurity/trivy-db:2
-          tar -xzf db.tar.gz -C ~/.cache/trivy/db && rm db.tar.gz
-          oras pull ghcr.io/aquasecurity/trivy-java-db:1
-          tar -xzf javadb.tar.gz -C ~/.cache/trivy/java-db && rm javadb.tar.gz
+
+          # Fetch latest manifest hash
+          NEW_HASH=$(oras manifest fetch ghcr.io/aquasecurity/trivy-db:2 | sha256sum | cut -d' ' -f1)
+          CACHED_HASH=$(cat ~/.cache/trivy/db_hash 2>/dev/null || echo "none")
+
+          # Compare hashes
+          if [ "$NEW_HASH" != "$CACHED_HASH" ]; then
+            echo "New Trivy DB version detected! Downloading..."
+            oras pull ghcr.io/aquasecurity/trivy-db:2
+            tar -xzf db.tar.gz -C ~/.cache/trivy/db && rm db.tar.gz
+            echo "$NEW_HASH" > ~/.cache/trivy/db_hash
+          else
+            echo "Trivy DB is already up-to-date. Skipping download."
+          fi
+
+          # Repeat for Java DB
+          NEW_JAVA_HASH=$(oras manifest fetch ghcr.io/aquasecurity/trivy-java-db:1 | sha256sum | cut -d' ' -f1)
+          CACHED_JAVA_HASH=$(cat ~/.cache/trivy/java-db_hash 2>/dev/null || echo "none")
+
+          if [ "$NEW_JAVA_HASH" != "$CACHED_JAVA_HASH" ]; then
+            echo "New Trivy Java DB version detected! Downloading..."
+            oras pull ghcr.io/aquasecurity/trivy-java-db:1
+            tar -xzf javadb.tar.gz -C ~/.cache/trivy/java-db && rm javadb.tar.gz
+            echo "$NEW_JAVA_HASH" > ~/.cache/trivy/java-db_hash
+          else
+            echo "Trivy Java DB is already up-to-date. Skipping download."
+          fi
 
       - name: Cache Trivy Databases
         uses: actions/cache@v4
